@@ -22,7 +22,7 @@
     <DockPanel Background="#1E1E1E"
                Margin="7">
 
-        <Border Height="28"
+        <Border Height="38"
                 Background="#252525"
                 DockPanel.Dock="Top">
 
@@ -38,12 +38,15 @@
                     <ColumnDefinition Width="100"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Text="ZenVPN"
+                <!--<TextBlock Text="ZenVPN"
                            Foreground="LightGray"
                            FontFamily="Consolas"
                            VerticalAlignment="Center"
                            HorizontalAlignment="Center"
-                           Margin="100,0,0,0"/>
+                           Margin="100,0,0,0"/>-->
+                <Image Margin="100,0,0,0"
+                       Source="/MVVM/View/pub-ico.png"
+                       Height="30"/>
 
                 <StackPanel Grid.Column="1"
                             Orientation="Horizontal"

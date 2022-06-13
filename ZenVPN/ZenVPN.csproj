@@ -5,6 +5,19 @@
     <TargetFramework>net6.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>pub-ico.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="MVVM\View\pub-ico.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="pub-ico.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="MVVM\View\pub-ico.png" />
+  </ItemGroup>
 
 </Project>

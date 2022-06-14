@@ -46,8 +46,8 @@
                            Margin="100,0,0,0"/>-->
                 
                 <Image Margin="100,0,0,0"
-                       Source="/MVVM/View/pub-ico.png"
-                       Height="30"/>
+                       Height="30" 
+                       Source="/MVVM/View/pub-ico.png" />
 
                 <StackPanel Grid.Column="1"
                             Orientation="Horizontal"

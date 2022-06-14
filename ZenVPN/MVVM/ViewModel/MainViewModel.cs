@@ -85,7 +85,7 @@ internal class MainViewModel : ObservableObject
 
             ConnectionStatus = "Connecting...";
 
-            Task.Run(() => _service.Connect(SelectedServer)).ContinueWith(x => SetConnectionStatus());
+            Task.Run(() => _service.Connect(SelectedServer)).ContinueWith(x => SetConnectStatus());
 
         });
 
@@ -93,11 +93,9 @@ internal class MainViewModel : ObservableObject
         {
             ConnectionStatus = "Disconnecting...";
 
-            Task.Run(() => _service.Disconnect()).ContinueWith(x => SetConnectionStatus());
+            Task.Run(() => _service.Disconnect()).ContinueWith(x => SetDisconnectStatus());
         });
     }
-
-
 
     private void SetConnectionStatus()
     {
@@ -105,5 +103,15 @@ internal class MainViewModel : ObservableObject
             ConnectionStatus = "Connected";
         else
             ConnectionStatus = "Disconnected";
+    }
+
+    private async void SetConnectStatus()
+    {
+        ConnectionStatus = await _service.SetConnectStatus(SelectedServer);
+    }
+
+    private async void SetDisconnectStatus()
+    {
+        ConnectionStatus = await _service.SetDisconnectStatus();
     }
 }

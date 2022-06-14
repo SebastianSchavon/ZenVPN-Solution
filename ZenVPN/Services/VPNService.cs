@@ -19,6 +19,8 @@ interface IVPNService
     Task Connect(ServerModel sm);
     Task Disconnect();
     string GetCountry(string name);
+    Task<string> SetDisconnectStatus();
+    Task<string> SetConnectStatus(ServerModel server);
 
 }
 
@@ -59,7 +61,9 @@ internal class VPNService : IVPNService
         process.StartInfo.Verb = "runas";
         process.StartInfo.CreateNoWindow = true;
         process.Start();
+#pragma warning disable CS4014
         process.WaitForExitAsync();
+#pragma warning restore CS4014
 
         await Task.Delay(TimeSpan.FromSeconds(6));
 
@@ -69,6 +73,33 @@ internal class VPNService : IVPNService
         Process.Start("taskkill", "/F /IM openvpn.exe").StartInfo.CreateNoWindow = true;
 
         await Task.Delay(TimeSpan.FromSeconds(6));
+
+    }
+
+    public async Task<string> SetDisconnectStatus()
+    {
+
+        for (int i = 0; i < 7; i++)
+        {
+            Thread.Sleep(TimeSpan.FromSeconds(2));
+            if(!CheckForVPNInterface())
+                return "Disconnected";
+        }
+
+        return "Something went wrong...";
+
+    }
+    public async Task<string> SetConnectStatus(ServerModel server)
+    {
+
+        for (int i = 0; i < 7; i++)
+        {
+            Thread.Sleep(TimeSpan.FromSeconds(2));
+            if (CheckForVPNInterface())
+                return $"Connected to {server.Name}";
+        }
+
+        return "Something went wrong...";
 
     }
 
@@ -83,7 +114,7 @@ internal class VPNService : IVPNService
 
         return "";
     }
-     
+
     public PingReply PingServer(string file)
     {
         using (var pinger = new Ping())
@@ -96,7 +127,7 @@ internal class VPNService : IVPNService
 
     public string GetFileIPAddress(string file)
     {
-        foreach(var line in File.ReadAllLines(file))
+        foreach (var line in File.ReadAllLines(file))
         {
             if (line.Contains("remote"))
             {

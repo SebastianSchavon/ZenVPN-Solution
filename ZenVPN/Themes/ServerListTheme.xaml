@@ -17,20 +17,49 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate>
-                    <StackPanel Orientation="Horizontal"
-                                Margin="0,4,0,4"
-                                MinHeight="4"
-                                Background="{TemplateBinding Background}">
+                    <Grid Background="{TemplateBinding Background}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,4,0,4"
+                                    MinHeight="4"
+                                    HorizontalAlignment="Left"
+                                    Grid.Column="0">
 
-                        <Image Width="30"
-                               RenderOptions.BitmapScalingMode="Fant"
-                               Source="{Binding Country}"
-                               Margin="10,0,0,0"/>
+                            <Image Width="30"
+                                   RenderOptions.BitmapScalingMode="Fant"
+                                   Source="{Binding Country}"
+                                   Margin="10,0,0,0"/>
 
-                        <TextBlock Text="{Binding Name}" 
+                            <TextBlock Text="{Binding Name}" 
                                    Margin="5,0,0,0" 
                                    VerticalAlignment="Center"/>
-                    </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,4,0,4"
+                                    MinHeight="4"
+                                    Background="{TemplateBinding Background}"
+                                    Grid.Column="2"
+                                    HorizontalAlignment="Right">
+
+                            <TextBlock Text="{Binding Ms}" 
+                                   Margin="0,0,5,0" 
+                                   VerticalAlignment="Bottom"/>
+                            
+                            <Image Width="15"
+                                   RenderOptions.BitmapScalingMode="Fant"
+                                   Margin="0,0,10,0" 
+                                   Source="/Themes/icons8-signal-48.png"
+                                   VerticalAlignment="Center"/>
+                            
+                        </StackPanel>
+                    </Grid>
+
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

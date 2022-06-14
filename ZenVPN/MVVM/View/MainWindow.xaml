@@ -44,6 +44,7 @@
                            VerticalAlignment="Center"
                            HorizontalAlignment="Center"
                            Margin="100,0,0,0"/>-->
+                
                 <Image Margin="100,0,0,0"
                        Source="/MVVM/View/pub-ico.png"
                        Height="30"/>
@@ -93,10 +94,6 @@
                        VerticalAlignment="Center">
 
             </TextBlock>
-
-
-
-
 
             <StackPanel Grid.Row="3"
                         Orientation="Horizontal"

@@ -26,8 +26,17 @@ internal class VPNService : IVPNService
 {
     public IEnumerable<ServerModel> GetServers()
     {
-        return Directory.GetFiles("./servers")
-            .Select(x => new ServerModel { Name = Path.GetFileName(x).Remove(Path.GetFileName(x).Length - 5, 5), Country = GetCountry(Path.GetFileName(x)) });
+        var servers = Directory.GetFiles("./servers")
+            .Select(x => new ServerModel
+            {
+                Name = Path.GetFileName(x).Remove(Path.GetFileName(x).Length - 5, 5),
+                Country = GetCountry(Path.GetFileName(x)),
+                Ip = PingServer(x).Address.ToString(),
+                Ms = PingServer(x).RoundtripTime
+
+            }).ToList();
+
+        return servers;
     }
 
     public bool CheckForVPNInterface()
@@ -37,7 +46,6 @@ internal class VPNService : IVPNService
             // TAP-Windows Adapter is the OpenVPN driver for windows
             if (Interface.Description.Contains("TAP-Windows Adapter") && Interface.OperationalStatus == OperationalStatus.Up)
                 return true;
-
         }
 
         return false;
@@ -75,7 +83,30 @@ internal class VPNService : IVPNService
 
         return "";
     }
+     
+    public PingReply PingServer(string file)
+    {
+        using (var pinger = new Ping())
+        {
+            return pinger.Send(GetFileIPAddress(file));
+        }
 
+
+    }
+
+    public string GetFileIPAddress(string file)
+    {
+        foreach(var line in File.ReadAllLines(file))
+        {
+            if (line.Contains("remote"))
+            {
+                var l = line.Substring(7, 11);
+                return l;
+            }
+        }
+
+        return "";
+    }
 
 
 }

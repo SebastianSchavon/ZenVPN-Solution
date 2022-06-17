@@ -87,13 +87,27 @@
 
             </ListView>
 
-            <TextBlock Text="{Binding ConnectionStatus}"
-                       Foreground="White"
-                       Grid.Row="2"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Grid.Row="2"
+                        HorizontalAlignment="Center">
+                <TextBlock Text="{Binding ConnectionStatus}"
+                           Foreground="White"
+                           Grid.Row="2"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Center"
+                           Margin="0,0,20,0">
 
-            </TextBlock>
+                </TextBlock>
+                <TextBlock Text="{Binding Bytes}"
+                           Foreground="White"
+                           Grid.Row="2"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center"
+                           Margin="20,0,0,0">
+                    
+                </TextBlock>
+            </StackPanel>
+
+            
 
             <StackPanel Grid.Row="3"
                         Orientation="Horizontal"

@@ -7,6 +7,11 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.Parsers;
+using System.Net.NetworkInformation;
 
 namespace ZenVPN.MVVM.ViewModel;
 
@@ -59,10 +64,22 @@ internal class MainViewModel : ObservableObject
         }
     }
 
+    private string _bytes;
+
+    public string Bytes
+    {
+        get { return _bytes; }
+        set 
+        { 
+            _bytes = value;
+            OnPropertyChanged();
+        }
+    }
 
 
     public MainViewModel()
     {
+
         _service = new VPNService();
 
         SetConnectionStatus();
@@ -77,6 +94,9 @@ internal class MainViewModel : ObservableObject
 
         ConnectCommand = new RelayCommand(o =>
         {
+            if (_service.CheckForVPNInterface())
+                return;
+
             if (SelectedServer == null)
             {
                 ConnectionStatus = "SELECT SERVER";
@@ -85,15 +105,21 @@ internal class MainViewModel : ObservableObject
 
             ConnectionStatus = "Connecting...";
 
-            Task.Run(() => _service.Connect(SelectedServer)).ContinueWith(x => SetConnectStatus());
+            Task.Run(() => _service.Connect(SelectedServer)).ContinueWith(x => SetConnectStatus()).ContinueWith(x => MonitorBandWidth());
+            
 
         });
 
         DisconnectCommand = new RelayCommand(o =>
         {
+
+            if (!_service.CheckForVPNInterface())
+                return;
+
             ConnectionStatus = "Disconnecting...";
 
             Task.Run(() => _service.Disconnect()).ContinueWith(x => SetDisconnectStatus());
+            
         });
     }
 
@@ -105,13 +131,49 @@ internal class MainViewModel : ObservableObject
             ConnectionStatus = "Disconnected";
     }
 
-    private async void SetConnectStatus()
+    private void SetConnectStatus()
     {
-        ConnectionStatus = await _service.SetConnectStatus(SelectedServer);
+        ConnectionStatus = _service.SetConnectStatus(SelectedServer);
     }
 
-    private async void SetDisconnectStatus()
+    private void SetDisconnectStatus()
     {
-        ConnectionStatus = await _service.SetDisconnectStatus();
+        ConnectionStatus = _service.SetDisconnectStatus();
+    }
+
+    public async void MonitorBandWidth()
+    {
+        IPv4InterfaceStatistics statistics;
+        long sent;
+        long recieved;
+
+
+        foreach (NetworkInterface Interface in NetworkInterface.GetAllNetworkInterfaces())
+        {
+            // TAP-Windows Adapter is the OpenVPN driver for windows
+            if (Interface.Description.Contains("TAP-Windows Adapter") && Interface.OperationalStatus == OperationalStatus.Up)
+            {
+                statistics = Interface.GetIPv4Statistics();
+
+                long sentBefore = statistics.BytesSent / 1024;
+                long recievedBefore = statistics.BytesReceived / 1024;
+
+                while (true)
+                {
+                    Thread.Sleep(2000);
+
+                    statistics = Interface.GetIPv4Statistics();
+
+                    sent = (statistics.BytesSent / 1024) - sentBefore;
+                    recieved = (statistics.BytesReceived / 1024) - recievedBefore;
+
+                    Bytes = $"Sent: {sent}kb / Recieved: {recieved}kb";
+                }
+            }
+                
+        }
+
+
+
     }
 }

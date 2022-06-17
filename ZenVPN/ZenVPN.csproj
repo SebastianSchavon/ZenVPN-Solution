@@ -18,6 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="MVVM\View\pub-ico.png" />
     <Resource Include="Themes\icons8-signal-48.png" />
   </ItemGroup>

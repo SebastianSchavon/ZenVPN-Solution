@@ -9,6 +9,8 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace ZenVPN.Services;
 
@@ -19,9 +21,8 @@ interface IVPNService
     Task Connect(ServerModel sm);
     Task Disconnect();
     string GetCountry(string name);
-    Task<string> SetDisconnectStatus();
-    Task<string> SetConnectStatus(ServerModel server);
-
+    string SetDisconnectStatus();
+    string SetConnectStatus(ServerModel server);
 }
 
 internal class VPNService : IVPNService
@@ -76,25 +77,23 @@ internal class VPNService : IVPNService
 
     }
 
-    public async Task<string> SetDisconnectStatus()
+    public string SetDisconnectStatus()
     {
 
-        for (int i = 0; i < 7; i++)
+        for (int i = 0; i < 20; i++)
         {
-            Thread.Sleep(TimeSpan.FromSeconds(2));
-            if(!CheckForVPNInterface())
+            if (!CheckForVPNInterface())
                 return "Disconnected";
         }
 
         return "Something went wrong...";
 
     }
-    public async Task<string> SetConnectStatus(ServerModel server)
+    public string SetConnectStatus(ServerModel server)
     {
 
-        for (int i = 0; i < 7; i++)
+        for (int i = 0; i < 20; i++)
         {
-            Thread.Sleep(TimeSpan.FromSeconds(2));
             if (CheckForVPNInterface())
                 return $"Connected to {server.Name}";
         }
@@ -122,7 +121,6 @@ internal class VPNService : IVPNService
             return pinger.Send(GetFileIPAddress(file));
         }
 
-
     }
 
     public string GetFileIPAddress(string file)
@@ -139,5 +137,5 @@ internal class VPNService : IVPNService
         return "";
     }
 
-
+    
 }

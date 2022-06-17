@@ -83,7 +83,7 @@ internal class MainViewModel : ObservableObject
 
         MoveWindowCommand = new RelayCommand(o => { Application.Current.MainWindow.DragMove(); });
 
-        ShutdownWindowCommand = new RelayCommand(o => { Application.Current.Shutdown(); _service.Disconnect(); });
+        ShutdownWindowCommand = new RelayCommand(o => { _service.Disconnect(); Application.Current.Shutdown(); ; });
 
         MinimizeWindowCommand = new RelayCommand(o => { Application.Current.MainWindow.WindowState = WindowState.Minimized; });
 
@@ -162,7 +162,7 @@ internal class MainViewModel : ObservableObject
                     sent = (statistics.BytesSent / 1024) - sentBefore;
                     recieved = (statistics.BytesReceived / 1024) - recievedBefore;
 
-                    BytesTransfer = $"{sent}kb  {recieved}kb";
+                    DataTransfer = $"{sent}kb  {recieved}kb";
 
                 }
             }

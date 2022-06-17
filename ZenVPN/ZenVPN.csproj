@@ -26,4 +26,8 @@
     <Resource Include="Themes\icons8-signal-48.png" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Interfaces\" />
+  </ItemGroup>
+
 </Project>

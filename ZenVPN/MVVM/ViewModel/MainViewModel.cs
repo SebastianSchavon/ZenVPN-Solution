@@ -1,16 +1,10 @@
 ﻿using ZenVPN.Core;
 using ZenVPN.MVVM.Model;
 using ZenVPN.Services;
-using System;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Diagnostics.Tracing.Session;
-using Microsoft.Diagnostics.Tracing.Parsers;
 using System.Net.NetworkInformation;
 
 namespace ZenVPN.MVVM.ViewModel;
@@ -64,18 +58,17 @@ internal class MainViewModel : ObservableObject
         }
     }
 
-    private string _bytes;
+    private string _dataTransfer;
 
-    public string Bytes
+    public string DataTransfer
     {
-        get { return _bytes; }
-        set 
-        { 
-            _bytes = value;
+        get { return _dataTransfer; }
+        set
+        {
+            _dataTransfer = value;
             OnPropertyChanged();
         }
     }
-
 
     public MainViewModel()
     {
@@ -84,11 +77,13 @@ internal class MainViewModel : ObservableObject
 
         SetConnectionStatus();
 
+        DataTransfer = $"0kb   0kb";
+
         Servers = new ObservableCollection<ServerModel>(_service.GetServers());
 
         MoveWindowCommand = new RelayCommand(o => { Application.Current.MainWindow.DragMove(); });
 
-        ShutdownWindowCommand = new RelayCommand(o => { Application.Current.Shutdown(); });
+        ShutdownWindowCommand = new RelayCommand(o => { Application.Current.Shutdown(); _service.Disconnect(); });
 
         MinimizeWindowCommand = new RelayCommand(o => { Application.Current.MainWindow.WindowState = WindowState.Minimized; });
 
@@ -167,13 +162,15 @@ internal class MainViewModel : ObservableObject
                     sent = (statistics.BytesSent / 1024) - sentBefore;
                     recieved = (statistics.BytesReceived / 1024) - recievedBefore;
 
-                    Bytes = $"Sent: {sent}kb / Recieved: {recieved}kb";
+                    BytesTransfer = $"{sent}kb  {recieved}kb";
+
                 }
             }
-                
+
         }
 
 
 
     }
+
 }

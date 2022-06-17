@@ -69,7 +69,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="25"/>
                 <RowDefinition />
-                <RowDefinition Height="25"/>
+                <RowDefinition Height="60"/>
                 <RowDefinition Height="40"/>
             </Grid.RowDefinitions>
 
@@ -87,22 +87,24 @@
 
             </ListView>
 
-            <StackPanel Orientation="Horizontal" Grid.Row="2"
+            <StackPanel Orientation="Vertical" 
+                        Grid.Row="2"
                         HorizontalAlignment="Center">
+                
                 <TextBlock Text="{Binding ConnectionStatus}"
                            Foreground="White"
                            Grid.Row="2"
-                           HorizontalAlignment="Left"
+                           Margin="0,10,0,5"
                            VerticalAlignment="Center"
-                           Margin="0,0,20,0">
+                           HorizontalAlignment="Center">
 
                 </TextBlock>
-                <TextBlock Text="{Binding Bytes}"
+                <TextBlock Text="{Binding DataTransfer}"
                            Foreground="White"
                            Grid.Row="2"
-                           HorizontalAlignment="Right"
+                           Margin="0,5,0,10"
                            VerticalAlignment="Center"
-                           Margin="20,0,0,0">
+                           HorizontalAlignment="Center">
                     
                 </TextBlock>
             </StackPanel>

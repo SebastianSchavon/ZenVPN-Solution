@@ -4,13 +4,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.NetworkInformation;
-using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Diagnostics.Tracing.Session;
-using Microsoft.Diagnostics.Tracing.Parsers;
+using ZenVPN.Core;
 
 namespace ZenVPN.Services;
 
@@ -25,7 +21,7 @@ interface IVPNService
     string SetConnectStatus(ServerModel server);
 }
 
-internal class VPNService : IVPNService
+internal class VPNService : ObservableObject, IVPNService
 {
     public IEnumerable<ServerModel> GetServers()
     {

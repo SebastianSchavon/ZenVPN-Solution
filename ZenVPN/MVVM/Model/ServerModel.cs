@@ -1,6 +1,4 @@
-﻿using System.Net.NetworkInformation;
-
-namespace ZenVPN.MVVM.Model;
+﻿namespace ZenVPN.MVVM.Model;
 
 internal class ServerModel
 {

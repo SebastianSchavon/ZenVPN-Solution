@@ -6,6 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Net.NetworkInformation;
+using System.Diagnostics;
+using System.Windows.Threading;
+using System;
 
 namespace ZenVPN.MVVM.ViewModel;
 
@@ -21,6 +24,19 @@ internal class MainViewModel : ObservableObject
     public RelayCommand DisconnectCommand { get; set; }
 
     public ObservableCollection<ServerModel> Servers { get; set; }
+
+    //private ObservableCollection<ServerModel> _servers;
+
+    //public ObservableCollection<ServerModel> Servers
+    //{
+    //    get { return _servers; }
+    //    set 
+    //    { 
+    //        _servers = value;
+    //        OnPropertyChanged();
+    //    }
+    //}
+
 
     private string _connectionStatus;
 
@@ -87,6 +103,8 @@ internal class MainViewModel : ObservableObject
 
         MinimizeWindowCommand = new RelayCommand(o => { Application.Current.MainWindow.WindowState = WindowState.Minimized; });
 
+        Task.Run(() => SetServerPing());
+
         ConnectCommand = new RelayCommand(o =>
         {
             if (_service.CheckForVPNInterface())
@@ -101,7 +119,7 @@ internal class MainViewModel : ObservableObject
             ConnectionStatus = "Connecting...";
 
             Task.Run(() => _service.Connect(SelectedServer)).ContinueWith(x => SetConnectStatus()).ContinueWith(x => MonitorBandWidth());
-            
+
 
         });
 
@@ -113,8 +131,8 @@ internal class MainViewModel : ObservableObject
 
             ConnectionStatus = "Disconnecting...";
 
-            Task.Run(() => _service.Disconnect()).ContinueWith(x => SetDisconnectStatus());
-            
+            Task.Run(() => _service.Disconnect()).ContinueWith(x => SetDisconnectStatus()).ContinueWith(x => { DataTransfer = $"0kb  0kb"; });
+
         });
     }
 
@@ -136,6 +154,18 @@ internal class MainViewModel : ObservableObject
         ConnectionStatus = _service.SetDisconnectStatus();
     }
 
+    private async void SetServerPing()
+    {
+        while (true)
+        {
+            Thread.Sleep(3000);
+            foreach(var server in Servers)
+            {
+                server.Ms = _service.PingServerIp(server.Ip);
+            }
+        }
+    }
+
     public async void MonitorBandWidth()
     {
         IPv4InterfaceStatistics statistics;
@@ -153,7 +183,7 @@ internal class MainViewModel : ObservableObject
                 long sentBefore = statistics.BytesSent / 1024;
                 long recievedBefore = statistics.BytesReceived / 1024;
 
-                while (true)
+                while (ConnectionStatus.Contains("Connected to"))
                 {
                     Thread.Sleep(2000);
 

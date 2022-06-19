@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using ZenVPN.Core;
+using System.Threading;
 
 namespace ZenVPN.Services;
 
@@ -17,6 +18,7 @@ interface IVPNService
     Task Connect(ServerModel sm);
     Task Disconnect();
     string GetCountry(string name);
+    long PingServerIp(string ip);
     string SetDisconnectStatus();
     string SetConnectStatus(ServerModel server);
 }
@@ -30,8 +32,8 @@ internal class VPNService : ObservableObject, IVPNService
             {
                 Name = Path.GetFileName(x).Remove(Path.GetFileName(x).Length - 5, 5),
                 Country = GetCountry(Path.GetFileName(x)),
-                Ip = PingServer(x).Address.ToString(),
-                Ms = PingServer(x).RoundtripTime
+                Ip = GetFileIPAddress(x),
+                Ms = PingServerIp(GetFileIPAddress(x))
 
             }).ToList();
 
@@ -62,14 +64,12 @@ internal class VPNService : ObservableObject, IVPNService
         process.WaitForExitAsync();
 #pragma warning restore CS4014
 
-        await Task.Delay(TimeSpan.FromSeconds(6));
+        
 
     }
     public async Task Disconnect()
     {
         Process.Start("taskkill", "/F /IM openvpn.exe").StartInfo.CreateNoWindow = true;
-
-        await Task.Delay(TimeSpan.FromSeconds(6));
 
     }
 
@@ -78,6 +78,8 @@ internal class VPNService : ObservableObject, IVPNService
 
         for (int i = 0; i < 20; i++)
         {
+            Thread.Sleep(1000);
+
             if (!CheckForVPNInterface())
                 return "Disconnected";
         }
@@ -90,6 +92,8 @@ internal class VPNService : ObservableObject, IVPNService
 
         for (int i = 0; i < 20; i++)
         {
+            Thread.Sleep(1000);
+
             if (CheckForVPNInterface())
                 return $"Connected to {server.Name}";
         }
@@ -110,11 +114,26 @@ internal class VPNService : ObservableObject, IVPNService
         return "";
     }
 
-    public PingReply PingServer(string file)
+    //public PingReply PingServerFile(string file)
+    //{
+
+    //    using (var pinger = new Ping())
+    //    {
+    //        return pinger.Send(GetFileIPAddress(file));
+    //    }
+
+    //}
+    public long PingServerIp(string ip)
     {
+        long rounds = 0;
+
         using (var pinger = new Ping())
         {
-            return pinger.Send(GetFileIPAddress(file));
+            for (int i = 0; i < 5; i++)
+            {
+                rounds += pinger.Send(ip).RoundtripTime;
+            }
+            return rounds / 5;
         }
 
     }

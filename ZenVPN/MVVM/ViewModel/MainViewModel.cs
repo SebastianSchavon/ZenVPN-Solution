@@ -93,7 +93,7 @@ internal class MainViewModel : ObservableObject
 
         SetConnectionStatus();
 
-        DataTransfer = $"0kb   0kb";
+        SetDataTransfer("0kb   0kb");
 
         Servers = new ObservableCollection<ServerModel>(_service.GetServers());
 
@@ -131,9 +131,14 @@ internal class MainViewModel : ObservableObject
 
             ConnectionStatus = "Disconnecting...";
 
-            Task.Run(() => _service.Disconnect()).ContinueWith(x => SetDisconnectStatus()).ContinueWith(x => { DataTransfer = $"0kb  0kb"; });
+            Task.Run(() => _service.Disconnect()).ContinueWith(x => SetDisconnectStatus()).ContinueWith(x => SetDataTransfer("0kb  0kb"));
 
         });
+    }
+
+    private void SetDataTransfer(string value)
+    {
+        DataTransfer = value;
     }
 
     private void SetConnectionStatus()

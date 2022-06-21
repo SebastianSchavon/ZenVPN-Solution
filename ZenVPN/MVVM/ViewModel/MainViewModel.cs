@@ -6,15 +6,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Net.NetworkInformation;
+using System.Linq;
+using ZenVPN.Utilities;
 using System.Diagnostics;
-using System.Windows.Threading;
-using System;
 
 namespace ZenVPN.MVVM.ViewModel;
 
 internal class MainViewModel : ObservableObject
 {
-    IVPNService _service;
+    IViewModelService _service;
 
     public RelayCommand MoveWindowCommand { get; set; }
     public RelayCommand ShutdownWindowCommand { get; set; }
@@ -24,19 +24,6 @@ internal class MainViewModel : ObservableObject
     public RelayCommand DisconnectCommand { get; set; }
 
     public ObservableCollection<ServerModel> Servers { get; set; }
-
-    //private ObservableCollection<ServerModel> _servers;
-
-    //public ObservableCollection<ServerModel> Servers
-    //{
-    //    get { return _servers; }
-    //    set 
-    //    { 
-    //        _servers = value;
-    //        OnPropertyChanged();
-    //    }
-    //}
-
 
     private string _connectionStatus;
 
@@ -89,17 +76,23 @@ internal class MainViewModel : ObservableObject
     public MainViewModel()
     {
 
-        _service = new VPNService();
+    }
+
+    public MainViewModel(IViewModelService service)
+    {
+        _service = service;
+
+        //_service = new VPNService();
 
         SetConnectionStatus();
 
         SetDataTransfer("0kb   0kb");
 
-        Servers = new ObservableCollection<ServerModel>(_service.GetServers());
+        Servers = new ObservableCollection<ServerModel>(IOUtil.GetServers());
 
         MoveWindowCommand = new RelayCommand(o => { Application.Current.MainWindow.DragMove(); });
 
-        ShutdownWindowCommand = new RelayCommand(o => { _service.Disconnect(); Application.Current.Shutdown(); ; });
+        ShutdownWindowCommand = new RelayCommand(o => { /*_service.Disconnect();*/ Process.Start("taskkill", "/F /IM openvpn.exe").StartInfo.CreateNoWindow = false; Application.Current.Shutdown(); ; });
 
         MinimizeWindowCommand = new RelayCommand(o => { Application.Current.MainWindow.WindowState = WindowState.Minimized; });
 
@@ -107,33 +100,124 @@ internal class MainViewModel : ObservableObject
 
         ConnectCommand = new RelayCommand(o =>
         {
-            if (_service.CheckForVPNInterface())
-                return;
-
             if (SelectedServer == null)
             {
                 ConnectionStatus = "SELECT SERVER";
                 return;
             }
 
-            ConnectionStatus = "Connecting...";
+            if (ConnectionStatus == $"Connected to {SelectedServer.Name}")
+                return;
 
-            Task.Run(() => _service.Connect(SelectedServer)).ContinueWith(x => SetConnectStatus()).ContinueWith(x => MonitorBandWidth());
-
-
+            ConnectMethod();
+            
         });
 
         DisconnectCommand = new RelayCommand(o =>
         {
 
-            if (!_service.CheckForVPNInterface())
+            if (ConnectionStatus == "Disconnected")
                 return;
 
-            ConnectionStatus = "Disconnecting...";
-
-            Task.Run(() => _service.Disconnect()).ContinueWith(x => SetDisconnectStatus()).ContinueWith(x => SetDataTransfer("0kb  0kb"));
+            DisconnectMethod();
 
         });
+    }
+
+    private void ConnectMethod()
+    {
+        ConnectionStatus = "Connecting";
+
+        Task.Run(() => _service.Connect(SelectedServer)).ContinueWith(x => SetConnectStatus(8, "Retrying")).ContinueWith(x =>
+        {
+            if (ConnectionStatus == $"Connected to {SelectedServer.Name}")
+            {
+                SetServerForeground(SelectedServer);
+                MonitorBandWidth();
+            }
+
+            if (ConnectionStatus == "Retrying")
+            {
+                Task.Run(() => {
+                    _service.Disconnect();
+
+                    Thread.Sleep(1000);
+
+                    _service.Connect(SelectedServer);
+
+                }).ContinueWith(x => SetConnectStatus(8, "Something went wrong. Retrying")).ContinueWith(x =>
+                {
+                    if (ConnectionStatus == $"Connected to {SelectedServer.Name}")
+                    {
+                        SetServerForeground(SelectedServer);
+                        MonitorBandWidth();
+                    }
+
+                    if (ConnectionStatus == "Something went wrong. Retrying")
+                    {
+                        Task.Run(() => {
+                            _service.Disconnect();
+
+                            Thread.Sleep(1000);
+
+                            _service.Connect(SelectedServer);
+
+                        }).ContinueWith(x => SetConnectStatus(8, "Disconnected")).ContinueWith(x =>
+                        {
+                            if (ConnectionStatus == $"Connected to {SelectedServer.Name}")
+                            {
+                                SetServerForeground(SelectedServer);
+                                MonitorBandWidth();
+                            }
+
+
+                        });
+                    }
+
+                });
+            }
+
+        });
+    }
+
+    private void DisconnectMethod()
+    {
+        ConnectionStatus = "Disconnecting";
+
+        Task.Run(() => _service.Disconnect())
+        .ContinueWith(x => SetDisconnectStatus()).ContinueWith(x =>
+        {
+            if (ConnectionStatus == "Disconnected")
+            {
+                SetServerForeground(SelectedServer);
+
+                Thread.Sleep(3000);
+
+                SetDataTransfer("0kb  0kb");
+            }
+        });
+    }
+
+    private void SetServerForeground(ServerModel sm)
+    {
+        if(ConnectionStatus.Contains("Connected to"))
+        {
+            var server = Servers.FirstOrDefault(x => x.Name == sm.Name);
+
+            if(server != null)
+                server.ForegroundColor = "#50ee3a";
+
+        }
+
+        if (ConnectionStatus.Contains("Disconnected"))
+        {
+
+            var server = Servers.FirstOrDefault(x => x.Name == sm.Name);
+
+            if (server != null)
+                server.ForegroundColor = "white";
+
+        }
     }
 
     private void SetDataTransfer(string value)
@@ -143,20 +227,68 @@ internal class MainViewModel : ObservableObject
 
     private void SetConnectionStatus()
     {
-        if (_service.CheckForVPNInterface())
+        if (NetworkUtil.CheckForVPNInterface())
             ConnectionStatus = "Connected";
         else
             ConnectionStatus = "Disconnected";
     }
 
-    private void SetConnectStatus()
-    {
-        ConnectionStatus = _service.SetConnectStatus(SelectedServer);
-    }
 
-    private void SetDisconnectStatus()
+    public void SetDisconnectStatus()
     {
-        ConnectionStatus = _service.SetDisconnectStatus();
+        int count = 0;
+
+        for (int i = 0; i < 8; i++)
+        {
+            count++;
+            ConnectionStatus += ".";
+
+            if (count >= 4)
+            {
+                ConnectionStatus = ConnectionStatus.Substring(0, ConnectionStatus.Length - count);
+                count = 0;
+            }
+
+            Thread.Sleep(1000);
+
+            if (!NetworkUtil.CheckForVPNInterface())
+            {
+                ConnectionStatus = "Disconnected";
+                return;
+            }
+                
+        }
+
+        ConnectionStatus = "Something went wrong...";
+
+    }
+    public void SetConnectStatus(int timer, string errorStatus)
+    {
+        int count = 0;
+
+        for (int i = 0; i < timer; i++)
+        {
+            count++;
+            ConnectionStatus += ".";
+
+            if (count >= 4)
+            {
+                ConnectionStatus = ConnectionStatus.Substring(0, ConnectionStatus.Length - count);
+                count = 0;
+            }
+
+            Thread.Sleep(1000);
+
+            if (NetworkUtil.CheckForVPNInterface())
+            {
+                ConnectionStatus = $"Connected to {SelectedServer.Name}";
+                return;
+            }
+                
+        }
+
+        ConnectionStatus = errorStatus;
+
     }
 
     private async void SetServerPing()
@@ -164,9 +296,10 @@ internal class MainViewModel : ObservableObject
         while (true)
         {
             Thread.Sleep(3000);
+
             foreach(var server in Servers)
             {
-                server.Ms = _service.PingServerIp(server.Ip);
+                server.Ms = NetworkUtil.PingServerIp(server.Ip);
             }
         }
     }
@@ -176,7 +309,6 @@ internal class MainViewModel : ObservableObject
         IPv4InterfaceStatistics statistics;
         long sent;
         long recieved;
-
 
         foreach (NetworkInterface Interface in NetworkInterface.GetAllNetworkInterfaces())
         {

@@ -1,4 +1,4 @@
-OBS *WORK IN PROGRESS*
+OBS: *WORK IN PROGRESS*
 
 WPF Application (Core) with MVVM pattern - VPN client, with OpenVPN access servers hosted on AWS, with different geolocations.
 

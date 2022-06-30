@@ -126,7 +126,7 @@ internal class MainViewModel : ObservableObject
 
     private void ConnectMethod()
     {
-        ConnectionStatus = "Connecting";
+        //ConnectionStatus = "Connecting";
 
         Task.Run(() => _service.Connect(SelectedServer)).ContinueWith(x => SetConnectStatus(8, "Retrying")).ContinueWith(x =>
         {
@@ -182,7 +182,7 @@ internal class MainViewModel : ObservableObject
 
     private void DisconnectMethod()
     {
-        ConnectionStatus = "Disconnecting";
+        //ConnectionStatus = "Disconnecting";
 
         Task.Run(() => _service.Disconnect())
         .ContinueWith(x => SetDisconnectStatus()).ContinueWith(x =>
@@ -236,12 +236,11 @@ internal class MainViewModel : ObservableObject
 
     public void SetDisconnectStatus()
     {
+        ConnectionStatus = "Disconnecting";
         int count = 0;
 
         for (int i = 0; i < 8; i++)
         {
-            count++;
-            ConnectionStatus += ".";
 
             if (count >= 4)
             {
@@ -256,7 +255,10 @@ internal class MainViewModel : ObservableObject
                 ConnectionStatus = "Disconnected";
                 return;
             }
-                
+
+            count++;
+            ConnectionStatus += ".";
+
         }
 
         ConnectionStatus = "Something went wrong...";
@@ -264,12 +266,11 @@ internal class MainViewModel : ObservableObject
     }
     public void SetConnectStatus(int timer, string errorStatus)
     {
+        ConnectionStatus = "Connecting";
         int count = 0;
 
         for (int i = 0; i < timer; i++)
         {
-            count++;
-            ConnectionStatus += ".";
 
             if (count >= 4)
             {
@@ -284,7 +285,10 @@ internal class MainViewModel : ObservableObject
                 ConnectionStatus = $"Connected to {SelectedServer.Name}";
                 return;
             }
-                
+
+            count++;
+            ConnectionStatus += ".";
+
         }
 
         ConnectionStatus = errorStatus;

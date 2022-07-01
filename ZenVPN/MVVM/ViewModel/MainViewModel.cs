@@ -9,13 +9,14 @@ using System.Net.NetworkInformation;
 using System.Linq;
 using ZenVPN.Utilities;
 using System.Diagnostics;
+using System;
 
 namespace ZenVPN.MVVM.ViewModel;
 
 internal class MainViewModel : ObservableObject
 {
     IViewModelService _service;
-
+    CancellationTokenSource tokenSource;
     public RelayCommand MoveWindowCommand { get; set; }
     public RelayCommand ShutdownWindowCommand { get; set; }
     public RelayCommand MinimizeWindowCommand { get; set; }
@@ -110,7 +111,7 @@ internal class MainViewModel : ObservableObject
                 return;
 
             ConnectMethod();
-            
+
         });
 
         DisconnectCommand = new RelayCommand(o =>
@@ -126,85 +127,68 @@ internal class MainViewModel : ObservableObject
 
     private void ConnectMethod()
     {
-        //ConnectionStatus = "Connecting";
+        tokenSource = new CancellationTokenSource();
 
-        Task.Run(() => _service.Connect(SelectedServer)).ContinueWith(x => SetConnectStatus(8, "Retrying")).ContinueWith(x =>
+        var t1 = Task.Run(() =>
         {
-            if (ConnectionStatus == $"Connected to {SelectedServer.Name}")
+            int counter = 0;
+            while (true)
             {
-                SetServerForeground(SelectedServer);
-                MonitorBandWidth();
-            }
+                _service.Connect(SelectedServer);
 
-            if (ConnectionStatus == "Retrying")
-            {
-                Task.Run(() => {
-                    _service.Disconnect();
+                if (SetConnectStatus(5, "Retrying"))
+                    return;
 
-                    Thread.Sleep(1000);
-
-                    _service.Connect(SelectedServer);
-
-                }).ContinueWith(x => SetConnectStatus(8, "Something went wrong. Retrying")).ContinueWith(x =>
+                if (counter >= 3 || tokenSource.Token.IsCancellationRequested)
                 {
-                    if (ConnectionStatus == $"Connected to {SelectedServer.Name}")
-                    {
-                        SetServerForeground(SelectedServer);
-                        MonitorBandWidth();
-                    }
+                    tokenSource.Cancel();
+                    ConnectionStatus = "Disconnected";
 
-                    if (ConnectionStatus == "Something went wrong. Retrying")
-                    {
-                        Task.Run(() => {
-                            _service.Disconnect();
+                    return;
+                }
 
-                            Thread.Sleep(1000);
-
-                            _service.Connect(SelectedServer);
-
-                        }).ContinueWith(x => SetConnectStatus(8, "Disconnected")).ContinueWith(x =>
-                        {
-                            if (ConnectionStatus == $"Connected to {SelectedServer.Name}")
-                            {
-                                SetServerForeground(SelectedServer);
-                                MonitorBandWidth();
-                            }
-
-
-                        });
-                    }
-
-                });
+                counter++;
             }
+
+        }, tokenSource.Token);
+
+        t1.ContinueWith((antecendent) =>
+        {
+            SetServerForeground(SelectedServer);
+            MonitorBandWidth();
 
         });
+
     }
 
     private void DisconnectMethod()
     {
-        //ConnectionStatus = "Disconnecting";
-
-        Task.Run(() => _service.Disconnect())
-        .ContinueWith(x => SetDisconnectStatus()).ContinueWith(x =>
+        var t1 = Task.Run(() =>
         {
-            if (ConnectionStatus == "Disconnected")
-            {
-                SetServerForeground(SelectedServer);
+            tokenSource.Cancel();
+            _service.Disconnect();
 
-                Thread.Sleep(3000);
-
-                SetDataTransfer("0kb  0kb");
-            }
         });
+
+        t1.ContinueWith((antecendant) => SetDisconnectStatus()).ContinueWith((antecendant) =>
+        {
+            SetServerForeground(SelectedServer);
+            SetDataTransfer("0kb  0kb");
+
+        });
+
     }
 
     private void SetServerForeground(ServerModel sm)
     {
-        if(ConnectionStatus.Contains("Connected to"))
+        foreach (var s in Servers)
+            s.ForegroundColor = "white";
+
+        if (ConnectionStatus.Contains("Connected to"))
         {
             var server = Servers.FirstOrDefault(x => x.Name == sm.Name);
 
-            if(server != null)
+            if (server != null)
                 server.ForegroundColor = "#50ee3a";
 
         }
@@ -237,6 +221,7 @@ internal class MainViewModel : ObservableObject
     public void SetDisconnectStatus()
     {
         ConnectionStatus = "Disconnecting";
+
         int count = 0;
 
         for (int i = 0; i < 8; i++)
@@ -257,6 +242,7 @@ internal class MainViewModel : ObservableObject
             }
 
             count++;
+
             ConnectionStatus += ".";
 
         }
@@ -264,9 +250,10 @@ internal class MainViewModel : ObservableObject
         ConnectionStatus = "Something went wrong...";
 
     }
-    public void SetConnectStatus(int timer, string errorStatus)
+    public bool SetConnectStatus(int timer, string errorStatus)
     {
         ConnectionStatus = "Connecting";
+
         int count = 0;
 
         for (int i = 0; i < timer; i++)
@@ -283,16 +270,18 @@ internal class MainViewModel : ObservableObject
             if (NetworkUtil.CheckForVPNInterface())
             {
                 ConnectionStatus = $"Connected to {SelectedServer.Name}";
-                return;
+                return true;
             }
 
             count++;
+
             ConnectionStatus += ".";
 
         }
 
         ConnectionStatus = errorStatus;
 
+        return false;
     }
 
     private async void SetServerPing()
@@ -301,7 +290,7 @@ internal class MainViewModel : ObservableObject
         {
             Thread.Sleep(3000);
 
-            foreach(var server in Servers)
+            foreach (var server in Servers)
             {
                 server.Ms = NetworkUtil.PingServerIp(server.Ip);
             }

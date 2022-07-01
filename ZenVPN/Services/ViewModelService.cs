@@ -48,9 +48,9 @@ internal class ViewModelService : IViewModelService
     }
     public void Disconnect()
     {
-        tokenSource.Cancel();
-        //Process.Start("taskkill", "/F /IM openvpn.exe").StartInfo.CreateNoWindow = false;
-
+        //tokenSource.Cancel();
+        Process.Start("taskkill", "/F /IM openvpn.exe").StartInfo.CreateNoWindow = false;
+        tokenSource.Dispose();
     }
 
 
